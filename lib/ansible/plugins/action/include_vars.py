@@ -25,7 +25,7 @@ from ansible.errors import AnsibleError
 from ansible.module_utils.six import string_types
 from ansible.module_utils._text import to_native, to_text
 from ansible.plugins.action import ActionBase
-
+from ansible.constants import mk_boolean as boolean
 
 class ActionModule(ActionBase):
 
@@ -78,7 +78,7 @@ class ActionModule(ActionBase):
             'dir', 'depth', 'files_matching', 'ignore_files', 'extensions',
         ]
         self.VALID_FILE_ARGUMENTS = ['file', '_raw_params']
-        self.GLOBAL_FILE_ARGUMENTS = ['name']
+        self.GLOBAL_FILE_ARGUMENTS = ['name', 'overwrite']
 
         self.VALID_ARGUMENTS = (
             self.VALID_DIR_ARGUMENTS + self.VALID_FILE_ARGUMENTS +
@@ -98,6 +98,7 @@ class ActionModule(ActionBase):
         self.depth = self._task.args.get('depth', None)
         self.files_matching = self._task.args.get('files_matching', None)
         self.ignore_files = self._task.args.get('ignore_files', None)
+        self.overwrite = boolean(self._task.args.get('overwrite', 'yes'))
         self.valid_extensions = self._task.args.get('extensions', self.VALID_FILE_EXTENSIONS)
         if isinstance(self.valid_extensions, string_types):
             self.valid_extensions = list(self.valid_extensions)
@@ -113,6 +114,8 @@ class ActionModule(ActionBase):
         """
         if not task_vars:
             task_vars = dict()
+        
+        self.task_vars = task_vars
 
         self.show_content = True
         self._set_args()
@@ -267,6 +270,8 @@ class ActionModule(ActionBase):
                 .format(filename)
             )
         else:
+            if not self.overwrite:
+                data = { var:data[var] for var in data if var not in self.task_vars }
             results.update(data)
         return failed, err_msg, results
 
