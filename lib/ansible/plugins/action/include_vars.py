@@ -21,6 +21,7 @@ import os
 
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
+from ansible.utils.boolean import boolean
 
 
 class ActionModule(ActionBase):
@@ -33,7 +34,9 @@ class ActionModule(ActionBase):
 
         result = super(ActionModule, self).run(tmp, task_vars)
 
+        overwrite = boolean(self._task.args.get('overwrite', 'yes'))
         source = self._task.args.get('_raw_params')
+        
         if source is None:
             raise AnsibleError("No filename was specified to include.", self._task._ds)
 
@@ -49,6 +52,9 @@ class ActionModule(ActionBase):
                 data = {}
             if not isinstance(data, dict):
                 raise AnsibleError("%s must be stored as a dictionary/hash" % source)
+            # If existing variables should not be overwritten, return all variables of data that are not contained within task_vars
+            if not overwrite:
+                data = { var:data[var] for var in data if var not in task_vars }	
             result['ansible_facts'] = data
             result['_ansible_no_log'] = not show_content
         else:
