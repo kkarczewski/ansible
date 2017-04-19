@@ -27,6 +27,7 @@ from ansible.module_utils._text import to_native, to_text
 from ansible.plugins.action import ActionBase
 from ansible.constants import mk_boolean as boolean
 
+
 class ActionModule(ActionBase):
 
     TRANSFERS_FILES = False
@@ -114,7 +115,7 @@ class ActionModule(ActionBase):
         """
         if not task_vars:
             task_vars = dict()
-        
+
         self.task_vars = task_vars
 
         self.show_content = True
@@ -271,7 +272,7 @@ class ActionModule(ActionBase):
             )
         else:
             if not self.overwrite:
-                data = { var:data[var] for var in data if var not in self.task_vars }
+                data = {var: data[var] for var in data if var not in self.task_vars}
             results.update(data)
         return failed, err_msg, results
 
