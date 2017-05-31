@@ -18,7 +18,7 @@
 #
 from contextlib import contextmanager
 
-from xml.etree.ElementTree import Element, SubElement
+from xml.etree.ElementTree import Element, SubElement, fromstring
 
 from ansible.module_utils.basic import env_fallback, return_values
 from ansible.module_utils.netconf import send_request, children
@@ -108,10 +108,12 @@ def load_configuration(module, candidate=None, action='merge', rollback=None, fo
             cfg = SubElement(obj, lookup[format])
 
         if isinstance(candidate, string_types):
-            cfg.text = candidate
+            if format == 'xml':
+                cfg.append(fromstring(candidate))
+            else:
+                cfg.text = candidate
         else:
             cfg.append(candidate)
-
     return send_request(module, obj)
 
 def get_configuration(module, compare=False, format='xml', rollback='0'):
@@ -135,7 +137,7 @@ def commit_configuration(module, confirm=False, check=False, comment=None, confi
         subele.text = str(comment)
     if confirm_timeout:
         subele = SubElement(obj, 'confirm-timeout')
-        subele.text = int(confirm_timeout)
+        subele.text = str(confirm_timeout)
     return send_request(module, obj)
 
 def command(module, command, format='text', rpc_only=False):
@@ -165,6 +167,9 @@ def get_diff(module):
 
 def load_config(module, candidate, warnings, action='merge', commit=False, format='xml',
                 comment=None, confirm=False, confirm_timeout=None):
+
+    if not candidate:
+        return
 
     with locked_config(module):
         if isinstance(candidate, list):

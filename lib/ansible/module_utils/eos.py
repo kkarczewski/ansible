@@ -54,7 +54,7 @@ eos_argument_spec = {
     'timeout': dict(type='int'),
 
     'provider': dict(type='dict'),
-    'transport': dict(choices=['cli', 'eapi'])
+    'transport': dict(choices=['cli', 'eapi'], default='cli')
 }
 
 # Add argument's default value here
@@ -67,9 +67,15 @@ ARGS_DEFAULT_VALUE = {
 def check_args(module, warnings):
     provider = module.params['provider'] or {}
     for key in eos_argument_spec:
-        if key not in ['provider', 'transport', 'authorize'] and module.params[key]:
-            warnings.append('argument %s has been deprecated and will be '
-                    'removed in a future version' % key)
+        if module._name == 'eos_user':
+            if (key not in ['username', 'password', 'provider', 'transport', 'authorize'] and
+                    module.params[key]):
+                warnings.append('argument %s has been deprecated and will be '
+                        'removed in a future version' % key)
+        else:
+            if key not in ['provider', 'authorize'] and module.params[key]:
+                warnings.append('argument %s has been deprecated and will be '
+                        'removed in a future version' % key)
 
     # set argument's default value if not provided in input
     # This is done to avoid unwanted argument deprecation warning
@@ -94,9 +100,7 @@ def get_connection(module):
     global _DEVICE_CONNECTION
     if not _DEVICE_CONNECTION:
         load_params(module)
-        transport = module.params['transport']
-        provider_transport = (module.params['provider'] or {}).get('transport')
-        if 'eapi' in (transport, provider_transport):
+        if is_eapi(module):
             conn = Eapi(module)
         else:
             conn = Cli(module)
