@@ -111,7 +111,6 @@ xml_file:
 
 import os
 import sys
-import argparse
 try:
    from lxml import etree
 except ImportError as e:
